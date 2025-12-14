@@ -21,6 +21,7 @@ var style_RiskIndex_1 = function(feature, resolution){
     if ("" !== null) {
         labelText = String("");
     }
+var style;
 
 // 33 – 190
 if (value >= 33.000000 && value <= 189.600000) {
