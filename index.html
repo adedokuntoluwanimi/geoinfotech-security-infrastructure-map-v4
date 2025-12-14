@@ -281,8 +281,62 @@
         <script src="./layers/layers.js" type="text/javascript"></script> 
         <script src="./resources/Autolinker.min.js"></script>
 
+<script>
+// ================== GLOBAL HIGHLIGHT LAYER ==================
 
-           <script>
+// Single shared source
+let highlightSource = new ol.source.Vector();
+
+// Single shared layer
+let highlightLayer = new ol.layer.Vector({
+    source: highlightSource,
+    style: function (feature) {
+
+        const label = feature.get("labelText");
+
+        const strokeColor =
+            label === "A" ? "rgba(0,0,0,1.0)" :
+            label === "B" ? "rgba(0,70,200,1.0)" :
+                            "rgba(0,0,0,1.0)";
+
+        const fillColor =
+            label === "A" ? "rgba(255,255,255,0.30)" :
+            label === "B" ? "rgba(0,70,200,0.25)" :
+                            "rgba(255,255,255,0.25)";
+
+        const styles = [
+            new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                    color: strokeColor,
+                    width: 4
+                }),
+                fill: new ol.style.Fill({
+                    color: fillColor
+                })
+            })
+        ];
+
+        if (label) {
+            styles.push(
+                new ol.style.Style({
+                    text: new ol.style.Text({
+                        text: label,
+                        font: "bold 18px Arial",
+                        fill: new ol.style.Fill({ color: "#000" }),
+                        stroke: new ol.style.Stroke({ color: "#fff", width: 3 })
+                    })
+                })
+            );
+        }
+
+        return styles;
+    },
+    zIndex: 999999
+});
+
+
+
+         
 // Layers for searching
 let wardLayer  = lyr_WardBoundaries_0;  // has statename, lganame, wardname
 let stateLayer = wardLayer;       // state polygons with statename
@@ -968,7 +1022,7 @@ document.addEventListener("DOMContentLoaded", function () {
 </script>
 
 <script>
-// ============ COMPARISON ENGINE (USING wardLayer + Risk Index_risk_score) ============
+// ============ COMPARISON ENGINE (USING wardLayer + risk_score) ============
 
 // Small helper: average of numeric array
 function avg(arr) {
@@ -1065,7 +1119,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // Use the same field your search meta uses:
         // Risk Index_risk_score
         function getStats(region) {
-            const scores = region.map(f => Number(f.get("Risk Index_risk_score")) || 0);
+            const scores = region.map(f => Number(f.get("risk_score")) || 0);
             const mean   = avg(scores);
             const cls    = classifyScore(mean);
 
@@ -1103,9 +1157,7 @@ document.addEventListener("DOMContentLoaded", function () {
             statsB,
             safer
         };
-// ======= HIGHLIGHT BOTH REGIONS ON MAP =======
 
-// ======= HIGHLIGHT BOTH REGIONS ON MAP =======
 // ======= HIGHLIGHT BOTH REGIONS ON MAP =======
 
 highlightSource.clear();
@@ -1380,7 +1432,13 @@ html2pdf()
 
 </script>
 
-        <script src="./resources/qgis2web.js"></script>    
+       <script src="./resources/qgis2web.js"></script>
+
+<script>
+map.addLayer(highlightLayer);
+</script>
+
+    
         <script>
     let realMap = map;
 
@@ -1410,62 +1468,7 @@ html2pdf()
 });
 
 
-// ================= HIGHLIGHT LAYER (REGION A vs B) =================
 
-let highlightSource = new ol.source.Vector();
-
-let highlightLayer = new ol.layer.Vector({
-    source: highlightSource,
-
-    style: function (feature) {
-        const label = feature.get("labelText");
-
-        // Different colours for A and B
-        const strokeColor =
-            label === "A" ? "rgba(0,0,0,1.0)" :   // Region A = black
-            label === "B" ? "rgba(0,70,200,1.0)" : // Region B = blue
-            "rgba(0,0,0,1.0)";
-
-        const fillColor =
-            label === "A" ? "rgba(255,255,255,0.30)" :
-            label === "B" ? "rgba(0,70,200,0.25)" :
-            "rgba(255,255,255,0.25)";
-
-        return [
-            new ol.style.Style({
-                stroke: new ol.style.Stroke({
-                    color: strokeColor,
-                    width: 4
-                }),
-                fill: new ol.style.Fill({
-                    color: fillColor
-                })
-            }),
-
-            label
-                ? new ol.style.Style({
-                    text: new ol.style.Text({
-                        text: label,
-                        font: "bold 18px Arial",
-                        fill: new ol.style.Fill({ color: "#000" }),
-                        stroke: new ol.style.Stroke({ color: "#fff", width: 3 })
-                    })
-                })
-                : null
-        ].filter(Boolean);
-    },
-
-    zIndex: 999999
-});
-
-// Add highlight layer on top of everything
-map.addLayer(highlightLayer);
-highlightLayer.setZIndex(999999);
-
-
-// Add highlight on map
-map.addLayer(highlightLayer);
-highlightLayer.setZIndex(999999);
 
 </script>
 <div id="pdfContent" style="display:none; width:100%; position:relative; min-height:1120px;">
@@ -1554,5 +1557,6 @@ highlightLayer.setZIndex(999999);
 </div>    
     </body>
 </html>
+
 
 
