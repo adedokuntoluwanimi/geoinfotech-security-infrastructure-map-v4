@@ -1410,39 +1410,58 @@ html2pdf()
 });
 
 
-// Create highlight layer and source
+// ================= HIGHLIGHT LAYER (REGION A vs B) =================
+
 let highlightSource = new ol.source.Vector();
+
 let highlightLayer = new ol.layer.Vector({
     source: highlightSource,
-    style: function(feature) {
-    const textVal = feature.get("labelText");
 
-    return [
-        new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: '#000000',
-                width: 4
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,255,255,0.35)' // subtle fill so highlight is soft
-            })
-        }),
+    style: function (feature) {
+        const label = feature.get("labelText");
 
-        textVal
-            ? new ol.style.Style({
-                text: new ol.style.Text({
-                    text: textVal,
-                    font: 'bold 18px Arial',
-                    fill: new ol.style.Fill({ color: '#000' }),
-                    stroke: new ol.style.Stroke({ color: '#fff', width: 3 })
+        // Different colours for A and B
+        const strokeColor =
+            label === "A" ? "rgba(0,0,0,1.0)" :   // Region A = black
+            label === "B" ? "rgba(0,70,200,1.0)" : // Region B = blue
+            "rgba(0,0,0,1.0)";
+
+        const fillColor =
+            label === "A" ? "rgba(255,255,255,0.30)" :
+            label === "B" ? "rgba(0,70,200,0.25)" :
+            "rgba(255,255,255,0.25)";
+
+        return [
+            new ol.style.Style({
+                stroke: new ol.style.Stroke({
+                    color: strokeColor,
+                    width: 4
+                }),
+                fill: new ol.style.Fill({
+                    color: fillColor
                 })
-            })
-            : null
-    ].filter(v => v !== null);
-},
+            }),
 
-    zIndex: 99999
+            label
+                ? new ol.style.Style({
+                    text: new ol.style.Text({
+                        text: label,
+                        font: "bold 18px Arial",
+                        fill: new ol.style.Fill({ color: "#000" }),
+                        stroke: new ol.style.Stroke({ color: "#fff", width: 3 })
+                    })
+                })
+                : null
+        ].filter(Boolean);
+    },
+
+    zIndex: 999999
 });
+
+// Add highlight layer on top of everything
+map.addLayer(highlightLayer);
+highlightLayer.setZIndex(999999);
+
 
 // Add highlight on map
 map.addLayer(highlightLayer);
@@ -1535,4 +1554,5 @@ highlightLayer.setZIndex(999999);
 </div>    
     </body>
 </html>
+
 
