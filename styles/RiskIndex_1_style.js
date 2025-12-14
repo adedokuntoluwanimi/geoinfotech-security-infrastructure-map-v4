@@ -22,26 +22,26 @@ var style_RiskIndex_1 = function(feature, resolution){
         labelText = String("");
     }
 
-  // 33 – 190
+// 33 – 190
 if (value >= 33.000000 && value <= 189.600000) {
     style = [
 
-        // Thick outer boundary
+        // Thick black Nigeria boundary
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(0,0,0,1.0)',
-                width: 3.5
+                width: 4.0
             })
         }),
 
-        // Fill + thin internal boundary
+        // White internal state boundaries + fill
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(255,255,255,1.0)',
-                width: 0.8
+                width: 1.2
             }),
             fill: new ol.style.Fill({
-                color: 'rgba(255,214,198,1.0)' // very light peach
+                color: 'rgba(255,214,198,1.0)'
             }),
             text: createTextStyle(feature, resolution, labelText, labelFont,
                                   labelFill, placement, bufferColor,
@@ -56,17 +56,17 @@ if (value >= 33.000000 && value <= 189.600000) {
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(0,0,0,1.0)',
-                width: 3.5
+                width: 4.0
             })
         }),
 
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(255,255,255,1.0)',
-                width: 0.8
+                width: 1.2
             }),
             fill: new ol.style.Fill({
-                color: 'rgba(255,176,148,1.0)' // light salmon
+                color: 'rgba(255,176,148,1.0)'
             }),
             text: createTextStyle(feature, resolution, labelText, labelFont,
                                   labelFill, placement, bufferColor,
@@ -81,17 +81,17 @@ if (value >= 33.000000 && value <= 189.600000) {
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(0,0,0,1.0)',
-                width: 3.5
+                width: 4.0
             })
         }),
 
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(255,255,255,1.0)',
-                width: 0.8
+                width: 1.2
             }),
             fill: new ol.style.Fill({
-                color: 'rgba(255,118,94,1.0)' // orange-red
+                color: 'rgba(255,118,94,1.0)'
             }),
             text: createTextStyle(feature, resolution, labelText, labelFont,
                                   labelFill, placement, bufferColor,
@@ -106,17 +106,17 @@ if (value >= 33.000000 && value <= 189.600000) {
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(0,0,0,1.0)',
-                width: 3.5
+                width: 4.0
             })
         }),
 
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(255,255,255,1.0)',
-                width: 0.8
+                width: 1.2
             }),
             fill: new ol.style.Fill({
-                color: 'rgba(215,48,39,1.0)' // strong red
+                color: 'rgba(215,48,39,1.0)'
             }),
             text: createTextStyle(feature, resolution, labelText, labelFont,
                                   labelFill, placement, bufferColor,
@@ -131,17 +131,17 @@ if (value >= 33.000000 && value <= 189.600000) {
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(0,0,0,1.0)',
-                width: 3.5
+                width: 4.0
             })
         }),
 
         new ol.style.Style({
             stroke: new ol.style.Stroke({
                 color: 'rgba(255,255,255,1.0)',
-                width: 0.8
+                width: 1.2
             }),
             fill: new ol.style.Fill({
-                color: 'rgba(165,15,21,1.0)' // dark red / maroon
+                color: 'rgba(165,15,21,1.0)'
             }),
             text: createTextStyle(feature, resolution, labelText, labelFont,
                                   labelFill, placement, bufferColor,
