@@ -151,3 +151,4 @@ if (value >= 33.000000 && value <= 189.600000) {
 }
 
 return style;
+};
