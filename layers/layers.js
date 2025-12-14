@@ -1,5 +1,27 @@
 var wms_layers = [];
 
+
+
+// OpenStreetMap
+var osmBase = new ol.layer.Tile({
+    title: 'OpenStreetMap',
+    type: 'base',
+    visible: false,
+    source: new ol.source.OSM()
+});
+
+// Esri World Street Map
+var esriStreet = new ol.layer.Tile({
+    title: 'Esri Street',
+    type: 'base',
+    visible: true,
+    source: new ol.source.XYZ({
+        url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',
+        attributions: 'Tiles © Esri'
+    })
+});
+
+
 var format_WardBoundaries_0 = new ol.format.GeoJSON();
 var features_WardBoundaries_0 = format_WardBoundaries_0.readFeatures(json_WardBoundaries_0, 
             {dataProjection: 'EPSG:4326', featureProjection: 'EPSG:3857'});
@@ -51,7 +73,14 @@ var lyr_MajorRoads_2 = new ol.layer.Vector({
             });
 
 lyr_WardBoundaries_0.setVisible(true);lyr_RiskIndex_1.setVisible(true);lyr_MajorRoads_2.setVisible(true);
-var layersList = [lyr_WardBoundaries_0,lyr_RiskIndex_1,lyr_MajorRoads_2];
+var layersList = [
+    esriStreet,
+    osmBase,
+    lyr_WardBoundaries_0,
+    lyr_RiskIndex_1,
+    lyr_MajorRoads_2
+];
+
 lyr_WardBoundaries_0.set('fieldAliases', {'FID': 'FID', 'globalid': 'globalid', 'uniq_id': 'uniq_id', 'timestamp': 'timestamp', 'editor': 'editor', 'wardname': 'wardname', 'wardcode': 'wardcode', 'lganame': 'lganame', 'lgacode': 'lgacode', 'statename': 'statename', 'statecode': 'statecode', 'amapcode': 'amapcode', 'status': 'status', 'source': 'source', 'urban': 'urban', 'Shape__Are': 'Shape__Are', 'Shape__Len': 'Shape__Len', 'road_risk': 'road_risk', 'policerisk': 'policerisk', 'milirisk': 'milirisk', 'crimeclean': 'crimeclean', 'final_risk': 'final_risk', });
 lyr_RiskIndex_1.set('fieldAliases', {'fid': 'fid', 'globalid': 'globalid', 'uniq_id': 'uniq_id', 'timestamp': 'timestamp', 'editor': 'editor', 'wardname': 'wardname', 'wardcode': 'wardcode', 'lganame': 'lganame', 'lgacode': 'lgacode', 'statecode': 'statecode', 'amapcode': 'amapcode', 'status': 'status', 'source': 'source', 'urban': 'urban', 'Shape__Are': 'Shape__Are', 'Shape__Len': 'Shape__Len', 'statename': 'statename', 'summary_total_num': 'summary_total_num', 'lu_group_count': 'lu_group_count', 'lu_group_min': 'lu_group_min', 'lu_group_max': 'lu_group_max', 'pop_proxy': 'pop_proxy', 'crime_norm': 'crime_norm', 'fid_count': 'fid_count', 'globalid_count': 'globalid_count', 'uniq_id_count': 'uniq_id_count', 'timestamp_count': 'timestamp_count', 'editor_count': 'editor_count', 'scdy_edtor_count': 'scdy_edtor_count', 'wardname_count': 'wardname_count', 'wardcode_count': 'wardcode_count', 'lganame_count': 'lganame_count', 'lgacode_count': 'lgacode_count', 'statename_count': 'statename_count', 'statecode_count': 'statecode_count', 'source_count': 'source_count', 'plc_st_nam_count': 'plc_st_nam_count', 'full_id_count': 'full_id_count', 'osm_id_count': 'osm_id_count', 'osm_type_count': 'osm_type_count', 'amenity_count': 'amenity_count', 'internet_access:fee_count': 'internet_access:fee_count', 'internet_access_count': 'internet_access_count', 'branch_count': 'branch_count', 'source:position_count': 'source:position_count', 'operator:type_count': 'operator:type_count', 'source:date_count': 'source:date_count', 'survey:date_count': 'survey:date_count', 'visibility_count': 'visibility_count', 'tessellate_count': 'tessellate_count', 'extrude_count': 'extrude_count', 'entrance_count': 'entrance_count', 'place_count': 'place_count', 'office_count': 'office_count', 'phone_count': 'phone_count', 'ele_count': 'ele_count', 'email_count': 'email_count', 'addr:postcode_count': 'addr:postcode_count', 'opening_hours_count': 'opening_hours_count', 'project:pdevii_count': 'project:pdevii_count', 'wheelchair_count': 'wheelchair_count', 'check_date_count': 'check_date_count', 'addr:housenumber_count': 'addr:housenumber_count', 'name:en_count': 'name:en_count', 'name:ar_count': 'name:ar_count', 'barrier_count': 'barrier_count', 'project:mappingforniger_count': 'project:mappingforniger_count', 'alt_name_count': 'alt_name_count', 'addr:street_count': 'addr:street_count', 'addr:city_count': 'addr:city_count', 'designation_count': 'designation_count', 'name:fr_count': 'name:fr_count', 'description_count': 'description_count', 'access_count': 'access_count', 'shop_count': 'shop_count', 'operator_count': 'operator_count', 'name_count': 'name_count', 'historic_count': 'historic_count', 'layer_count': 'layer_count', 'path_count': 'path_count', 'police_norm': 'police_norm', 'fid_count_2': 'fid_count_2', 'sn_count': 'sn_count', 'Name_count_2': 'Name_count_2', 'State_count': 'State_count', 'Military_count': 'Military_count', 'Latitude_count': 'Latitude_count', 'Longitude_count': 'Longitude_count', 'full_id_count_2': 'full_id_count_2', 'osm_id_count_2': 'osm_id_count_2', 'osm_type_count_2': 'osm_type_count_2', 'landuse_count': 'landuse_count', 'source:url_count': 'source:url_count', 'military_service_count': 'military_service_count', 'addr:street_count_2': 'addr:street_count_2', 'addr:city_count_2': 'addr:city_count_2', 'description_count_2': 'description_count_2', 'access_count_2': 'access_count_2', 'entrance_count_2': 'entrance_count_2', 'barrier_count_2': 'barrier_count_2', 'layer_count_2': 'layer_count_2', 'path_count_2': 'path_count_2', 'wardname_count_2': 'wardname_count_2', 'lganame_count_2': 'lganame_count_2', 'statename_count_2': 'statename_count_2', 'military_norm': 'military_norm', 'road_length': 'road_length', 'road_count': 'road_count', 'risk_score': 'risk_score', 'military_adj': 'military_adj', 'crime adj': 'crime adj', });
 lyr_MajorRoads_2.set('fieldAliases', {'fid': 'fid', 'OBJECTID': 'OBJECTID', 'id': 'id', 'country': 'country', 'iso3': 'iso3', 'source_id': 'source_id', 'class': 'class', 'speed_estimate': 'speed_estimate', 'speed_estimate_method': 'speed_estimate_method', 'road_surface': 'road_surface', 'names': 'names', 'subclass': 'subclass', 'speed_limits': 'speed_limits', 'date': 'date', 'source_acronym': 'source_acronym', });
