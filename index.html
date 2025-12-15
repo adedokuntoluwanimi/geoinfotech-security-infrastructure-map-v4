@@ -148,7 +148,7 @@
         <option value="">LGA</option>
     </select>
     <select id="a-ward" style="width:100%; margin-top:4px;">
-        <option value="">Ward (optional)</option>
+        <option value="">Ward</option>
     </select>
 
     <!-- Region B -->
@@ -160,7 +160,7 @@
         <option value="">LGA</option>
     </select>
     <select id="b-ward" style="width:100%; margin-top:4px;">
-        <option value="">Ward (optional)</option>
+        <option value="">Ward</option>
     </select>
 
     <!-- Compare button -->
@@ -282,59 +282,6 @@
         <script src="./resources/Autolinker.min.js"></script>
 
 <script>
-// ================== GLOBAL HIGHLIGHT LAYER ==================
-
-// Single shared source
-let highlightSource = new ol.source.Vector();
-
-// Single shared layer
-let highlightLayer = new ol.layer.Vector({
-    source: highlightSource,
-    style: function (feature) {
-
-        const label = feature.get("labelText");
-
-        const strokeColor =
-            label === "A" ? "rgba(0,0,0,1.0)" :
-            label === "B" ? "rgba(0,70,200,1.0)" :
-                            "rgba(0,0,0,1.0)";
-
-        const fillColor =
-            label === "A" ? "rgba(255,255,255,0.30)" :
-            label === "B" ? "rgba(0,70,200,0.25)" :
-                            "rgba(255,255,255,0.25)";
-
-        const styles = [
-            new ol.style.Style({
-                stroke: new ol.style.Stroke({
-                    color: strokeColor,
-                    width: 4
-                }),
-                fill: new ol.style.Fill({
-                    color: fillColor
-                })
-            })
-        ];
-
-        if (label) {
-            styles.push(
-                new ol.style.Style({
-                    text: new ol.style.Text({
-                        text: label,
-                        font: "bold 18px Arial",
-                        fill: new ol.style.Fill({ color: "#000" }),
-                        stroke: new ol.style.Stroke({ color: "#fff", width: 3 })
-                    })
-                })
-            );
-        }
-
-        return styles;
-    },
-    zIndex: 999999
-});
-
-
 
          
 // Layers for searching
@@ -415,7 +362,7 @@ else {
 }
 
 
-    // Find matching feature
+  
    // Find matching features (maybe more than one for LGA)
 let foundFeatures = [];
 
@@ -1158,80 +1105,93 @@ document.addEventListener("DOMContentLoaded", function () {
             safer
         };
 
-// ======= HIGHLIGHT BOTH REGIONS (STABLE) =======
+// ======= HIGHLIGHT BOTH REGIONS ON MAP =======
 
 highlightSource.clear();
 let finalExtent = ol.extent.createEmpty();
 
-function addHighlight(region, label) {
+function highlightCorrectGeometry(region, label) {
+
+    const selectedState = document.getElementById(label === "A" ? "a-state" : "b-state").value;
+    const selectedLGA   = document.getElementById(label === "A" ? "a-lga" : "b-lga").value;
+    const selectedWard  = document.getElementById(label === "A" ? "a-ward" : "b-ward").value;
+
+    // CASE 1: State-only selection
+    if (selectedState && !selectedLGA && !selectedWard) {
+        const stateFeature = lyr_RiskIndex_1.getSource().getFeatures().find(f =>
+            normalize(f.get("statename")) === normalize(selectedState)
+        );
+
+        if (!stateFeature) return;
+
+        const geom = stateFeature.getGeometry().clone();
+        const feat = new ol.Feature({ geometry: geom });
+        feat.set("labelText", label);
+        highlightSource.addFeature(feat);
+
+        const extent = geom.getExtent();
+        ol.extent.extend(finalExtent, extent);
+        return;
+    }
+
+    // CASE 2: LGA or WARD selected
     region.forEach(f => {
         const geom = f.getGeometry().clone();
         const feat = new ol.Feature({ geometry: geom });
         feat.set("labelText", label);
-        feat.set("regionTag", label); // IMPORTANT
         highlightSource.addFeature(feat);
+
         ol.extent.extend(finalExtent, geom.getExtent());
     });
 }
 
-addHighlight(regionA, "A");
-addHighlight(regionB, "B");
+highlightCorrectGeometry(regionA, "A");
+highlightCorrectGeometry(regionB, "B");
 
+// fit map first
 if (!ol.extent.isEmpty(finalExtent)) {
-    map.getView().fit(
-        ol.extent.buffer(finalExtent, 15000),
-        {
-            duration: 900,
-            padding: [80, 380, 80, 80],
-            maxZoom: 11
+    finalExtent = ol.extent.buffer(finalExtent, 15000);
+
+    map.getView().fit(finalExtent, {
+        duration: 1000,
+        padding: [80, 380, 80, 80],
+        maxZoom: 11
+    });
+}
+        
+// After zoom finishes, capture separately
+setTimeout(() => {
+
+    // temporarily hide B highlight
+    highlightSource.clear();
+    highlightCorrectGeometry(regionA, "A");
+
+    setTimeout(() => {
+        const cA = getMapCanvas();
+        if(cA){
+            window.lastCompareSnapshotA = cA.toDataURL("image/png");
         }
-    );
-}
 
-// ===== SNAPSHOTS (DETERMINISTIC, NO SOURCE CLEARING) =====
+        // now switch to B only
+        highlightSource.clear();
+        highlightCorrectGeometry(regionB, "B");
 
-function forceRender() {
-    map.renderSync();
-}
+        setTimeout(() => {
+            const cB = getMapCanvas();
+            if(cB){
+                window.lastCompareSnapshotB = cB.toDataURL("image/png");
+            }
 
-// Snapshot A
-highlightSource.getFeatures().forEach(f => {
-    f.setStyle(f.get("regionTag") === "A" ? null : new ol.style.Style(null));
-});
-forceRender();
+            // after both captured, redraw both
+            highlightSource.clear();
+            highlightCorrectGeometry(regionA, "A");
+            highlightCorrectGeometry(regionB, "B");
 
-const cA = getMapCanvas();
-if (cA) window.lastCompareSnapshotA = cA.toDataURL("image/png");
+        }, 600);
 
-// Snapshot B
-highlightSource.getFeatures().forEach(f => {
-    f.setStyle(f.get("regionTag") === "B" ? null : new ol.style.Style(null));
-});
-forceRender();
+    }, 600);
 
-const cB = getMapCanvas();
-if (cB) window.lastCompareSnapshotB = cB.toDataURL("image/png");
-
-// Restore
-highlightSource.getFeatures().forEach(f => f.setStyle(null));
-forceRender();
-
-
-const cA = getMapCanvas();
-if (cA) window.lastCompareSnapshotA = cA.toDataURL("image/png");
-
-// Snapshot B
-highlightSource.getFeatures().forEach(f => {
-    f.setStyle(f.get("regionTag") === "B" ? null : new ol.style.Style(null));
-});
-forceRender();
-
-const cB = getMapCanvas();
-if (cB) window.lastCompareSnapshotB = cB.toDataURL("image/png");
-
-// Restore
-highlightSource.getFeatures().forEach(f => f.setStyle(null));
-forceRender();
+}, 1200);
 
 
         // Show result in the panel
@@ -1313,11 +1273,7 @@ pdfDiv.style.textAlign = "justify";
     if (B.lga) locB = `${B.lga}, ${locB}`;
     if (B.ward) locB = `${B.ward}, ${locB}`;
 
-    if (!window.lastCompareSnapshotA || !window.lastCompareSnapshotB) {
-    alert("Map snapshots are still processing. Please wait and try again.");
-    return;
-}
-
+  
 pdfDiv.innerHTML = `
 <div style="padding:45px 90px 140px 45px; position:relative;">
 
@@ -1462,15 +1418,52 @@ map.addLayer(highlightLayer);
     }
 });
 
+            // Create highlight layer and source
+let highlightSource = new ol.source.Vector();
+let highlightLayer = new ol.layer.Vector({
+    source: highlightSource,
+    style: function(feature) {
+    const textVal = feature.get("labelText");
+
+    return [
+        new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: '#000000',
+                width: 4
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,255,255,0.35)' // subtle fill so highlight is soft
+            })
+        }),
+
+        textVal
+            ? new ol.style.Style({
+                text: new ol.style.Text({
+                    text: textVal,
+                    font: 'bold 18px Arial',
+                    fill: new ol.style.Fill({ color: '#000' }),
+                    stroke: new ol.style.Stroke({ color: '#fff', width: 3 })
+                })
+            })
+            : null
+    ].filter(v => v !== null);
+},
+
+    zIndex: 99999
+});
+
+// Add highlight on map
+map.addLayer(highlightLayer);
+highlightLayer.setZIndex(999999);
 
 
 
 </script>
-<div id="Content" style="display:none; width:100%; position:relative; min-height:1120px;">
-    <div id="-main-body" style="padding:40px; font-family:Arial; padding-bottom:160px;">
+<div id="pdfContent" style="display:none; width:100%; position:relative; min-height:1120px;">
+    <div id="pdf-main-body" style="padding:40px; font-family:Arial; padding-bottom:160px;">
 
     <!-- BODY CONTENT -->
-    <div id="-body" style="padding:30px; font-family:'Times New Roman', Times, serif; line-height:1.5;">
+    <div id="pdf-body" style="padding:30px; font-family:'Times New Roman', Times, serif; line-height:1.5;">
 
         <img src="images/logo.jpg" style="position:absolute; top:45px; left:45px; width:140px;">
   
@@ -1491,8 +1484,8 @@ map.addLayer(highlightLayer);
 
         <div style="height:25px;"></div>
 
-        <p><strong>Location:</strong> <span id="-location"></span></p>
-        <p><strong>Risk Classification:</strong> <span id="-class"></span></p>
+        <p><strong>Location:</strong> <span id="pdf-location"></span></p>
+        <p><strong>Risk Classification:</strong> <span id="pdf-class"></span></p>
 
         <div style="height:25px;"></div>
 
@@ -1552,7 +1545,4 @@ map.addLayer(highlightLayer);
 </div>    
     </body>
 </html>
-
-
-
 
