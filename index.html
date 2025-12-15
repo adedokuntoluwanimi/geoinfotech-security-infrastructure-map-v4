@@ -886,7 +886,7 @@ const p3 =
 <script>
 // ============ COMPARISON: BUILD CASCADING DROPDOWNS FROM WARD LAYER ============
 
-// Reuse your normalize() helper from above, so do NOT redefine it.
+
 
 // Helper: wait until wardLayer has features
 function waitForWardFeatures(cb) {
@@ -1158,95 +1158,80 @@ document.addEventListener("DOMContentLoaded", function () {
             safer
         };
 
-// ======= HIGHLIGHT BOTH REGIONS ON MAP =======
+// ======= HIGHLIGHT BOTH REGIONS (STABLE) =======
 
 highlightSource.clear();
 let finalExtent = ol.extent.createEmpty();
 
-function highlightCorrectGeometry(region, label) {
-
-    const selectedState = document.getElementById(label === "A" ? "a-state" : "b-state").value;
-    const selectedLGA   = document.getElementById(label === "A" ? "a-lga" : "b-lga").value;
-    const selectedWard  = document.getElementById(label === "A" ? "a-ward" : "b-ward").value;
-
-    // CASE 1: State-only selection
-    if (selectedState && !selectedLGA && !selectedWard) {
-        const stateFeature = lyr_RiskIndex_1.getSource().getFeatures().find(f =>
-            normalize(f.get("statename")) === normalize(selectedState)
-        );
-
-        if (!stateFeature) return;
-
-        const geom = stateFeature.getGeometry().clone();
-        const feat = new ol.Feature({ geometry: geom });
-        feat.set("labelText", label);
-        highlightSource.addFeature(feat);
-
-        const extent = geom.getExtent();
-        ol.extent.extend(finalExtent, extent);
-        return;
-    }
-
-    // CASE 2: LGA or WARD selected
+function addHighlight(region, label) {
     region.forEach(f => {
         const geom = f.getGeometry().clone();
         const feat = new ol.Feature({ geometry: geom });
         feat.set("labelText", label);
+        feat.set("regionTag", label); // IMPORTANT
         highlightSource.addFeature(feat);
-
         ol.extent.extend(finalExtent, geom.getExtent());
     });
 }
 
-highlightCorrectGeometry(regionA, "A");
-highlightCorrectGeometry(regionB, "B");
+addHighlight(regionA, "A");
+addHighlight(regionB, "B");
 
-// fit map first
 if (!ol.extent.isEmpty(finalExtent)) {
-    finalExtent = ol.extent.buffer(finalExtent, 15000);
-
-    map.getView().fit(finalExtent, {
-        duration: 1000,
-        padding: [80, 380, 80, 80],
-        maxZoom: 11
-    });
+    map.getView().fit(
+        ol.extent.buffer(finalExtent, 15000),
+        {
+            duration: 900,
+            padding: [80, 380, 80, 80],
+            maxZoom: 11
+        }
+    );
 }
 
-// After zoom finishes, capture separately
-setTimeout(() => {
+// ===== SNAPSHOTS (DETERMINISTIC, NO SOURCE CLEARING) =====
 
-    // temporarily hide B highlight
-    highlightSource.clear();
-    highlightCorrectGeometry(regionA, "A");
+function forceRender() {
+    map.renderSync();
+}
 
-    setTimeout(() => {
-        const cA = getMapCanvas();
-        if(cA){
-            window.lastCompareSnapshotA = cA.toDataURL("image/png");
-        }
+// Snapshot A
+highlightSource.getFeatures().forEach(f => {
+    f.setStyle(f.get("regionTag") === "A" ? null : new ol.style.Style(null));
+});
+forceRender();
 
-        // now switch to B only
-        highlightSource.clear();
-        highlightCorrectGeometry(regionB, "B");
+const cA = getMapCanvas();
+if (cA) window.lastCompareSnapshotA = cA.toDataURL("image/png");
 
-        setTimeout(() => {
-            const cB = getMapCanvas();
-            if(cB){
-                window.lastCompareSnapshotB = cB.toDataURL("image/png");
-            }
+// Snapshot B
+highlightSource.getFeatures().forEach(f => {
+    f.setStyle(f.get("regionTag") === "B" ? null : new ol.style.Style(null));
+});
+forceRender();
 
-            // after both captured, redraw both
-            highlightSource.clear();
-            highlightCorrectGeometry(regionA, "A");
-            highlightCorrectGeometry(regionB, "B");
+const cB = getMapCanvas();
+if (cB) window.lastCompareSnapshotB = cB.toDataURL("image/png");
 
-        }, 600);
-
-    }, 600);
-
-}, 1200);
+// Restore
+highlightSource.getFeatures().forEach(f => f.setStyle(null));
+forceRender();
 
 
+const cA = getMapCanvas();
+if (cA) window.lastCompareSnapshotA = cA.toDataURL("image/png");
+
+// Snapshot B
+highlightSource.getFeatures().forEach(f => {
+    f.setStyle(f.get("regionTag") === "B" ? null : new ol.style.Style(null));
+});
+forceRender();
+
+const cB = getMapCanvas();
+if (cB) window.lastCompareSnapshotB = cB.toDataURL("image/png");
+
+// Restore
+highlightSource.getFeatures().forEach(f => f.setStyle(null));
+forceRender();
 
 
         // Show result in the panel
@@ -1306,9 +1291,9 @@ document.getElementById("downloadComparePDFBtn").addEventListener("click", () =>
         `the alternate location. Decision stability, scheduling predictability and execution staging remain less sensitive ` +
         `to environmental variation within ${summary.safer}.`;
 
-     pdfDiv = document.createElement("div");
-pdfDiv.style.width = "100%";
-pdfDiv.style.minHeight = "1120px";
+      = document.createElement("div");
+.style.width = "100%";
+.style.minHeight = "1120px";
 pdfDiv.style.position = "relative";
 pdfDiv.style.padding = "40px";
 pdfDiv.style.fontFamily = "'Times New Roman', Times, serif";
@@ -1327,6 +1312,12 @@ pdfDiv.style.textAlign = "justify";
     let locB = B.state;
     if (B.lga) locB = `${B.lga}, ${locB}`;
     if (B.ward) locB = `${B.ward}, ${locB}`;
+
+    if (!window.lastCompareSnapshotA || !window.lastCompareSnapshotB) {
+    alert("Map snapshots are still processing. Please wait and try again.");
+    return;
+}
+
 pdfDiv.innerHTML = `
 <div style="padding:45px 90px 140px 45px; position:relative;">
 
@@ -1417,10 +1408,14 @@ html2pdf()
         margin: 0,
         filename: `Comparison_Report_${locA.replace(/,/g,"-")}_vs_${locB.replace(/,/g,"-")}.pdf`,
         jsPDF: { format: "a4", orientation: "portrait" },
-        html2canvas: { scale: 2 }
+        html2canvas: {
+            scale: 2,
+            useCORS: true
+        }
     })
     .save();
-});
+
+
 
 }); // CLOSES compare-btn click
     });
@@ -1471,11 +1466,11 @@ map.addLayer(highlightLayer);
 
 
 </script>
-<div id="pdfContent" style="display:none; width:100%; position:relative; min-height:1120px;">
-    <div id="pdf-main-body" style="padding:40px; font-family:Arial; padding-bottom:160px;">
+<div id="Content" style="display:none; width:100%; position:relative; min-height:1120px;">
+    <div id="-main-body" style="padding:40px; font-family:Arial; padding-bottom:160px;">
 
     <!-- BODY CONTENT -->
-    <div id="pdf-body" style="padding:30px; font-family:'Times New Roman', Times, serif; line-height:1.5;">
+    <div id="-body" style="padding:30px; font-family:'Times New Roman', Times, serif; line-height:1.5;">
 
         <img src="images/logo.jpg" style="position:absolute; top:45px; left:45px; width:140px;">
   
@@ -1496,8 +1491,8 @@ map.addLayer(highlightLayer);
 
         <div style="height:25px;"></div>
 
-        <p><strong>Location:</strong> <span id="pdf-location"></span></p>
-        <p><strong>Risk Classification:</strong> <span id="pdf-class"></span></p>
+        <p><strong>Location:</strong> <span id="-location"></span></p>
+        <p><strong>Risk Classification:</strong> <span id="-class"></span></p>
 
         <div style="height:25px;"></div>
 
@@ -1557,6 +1552,7 @@ map.addLayer(highlightLayer);
 </div>    
     </body>
 </html>
+
 
 
 
