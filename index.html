@@ -282,7 +282,43 @@
         <script src="./resources/Autolinker.min.js"></script>
 
 <script>
+            // Create highlight layer and source
+let highlightSource = new ol.source.Vector();
+let highlightLayer = new ol.layer.Vector({
+    source: highlightSource,
+    style: function(feature) {
+    const textVal = feature.get("labelText");
 
+    return [
+        new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: '#000000',
+                width: 4
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,255,255,0.35)' // subtle fill so highlight is soft
+            })
+        }),
+
+        textVal
+            ? new ol.style.Style({
+                text: new ol.style.Text({
+                    text: textVal,
+                    font: 'bold 18px Arial',
+                    fill: new ol.style.Fill({ color: '#000' }),
+                    stroke: new ol.style.Stroke({ color: '#fff', width: 3 })
+                })
+            })
+            : null
+    ].filter(v => v !== null);
+},
+
+    zIndex: 99999
+});
+
+// Add highlight on map
+map.addLayer(highlightLayer);
+highlightLayer.setZIndex(999999);
          
 // Layers for searching
 let wardLayer  = lyr_WardBoundaries_0;  // has statename, lganame, wardname
@@ -1148,7 +1184,6 @@ function highlightCorrectGeometry(region, label) {
 highlightCorrectGeometry(regionA, "A");
 highlightCorrectGeometry(regionB, "B");
 
-// fit map first
 if (!ol.extent.isEmpty(finalExtent)) {
     finalExtent = ol.extent.buffer(finalExtent, 15000);
 
@@ -1158,40 +1193,37 @@ if (!ol.extent.isEmpty(finalExtent)) {
         maxZoom: 11
     });
 }
-        
-// After zoom finishes, capture separately
-setTimeout(() => {
 
-    // temporarily hide B highlight
-    highlightSource.clear();
-    highlightCorrectGeometry(regionA, "A");
+map.once("moveend", () => {
 
-    setTimeout(() => {
-        const cA = getMapCanvas();
-        if(cA){
-            window.lastCompareSnapshotA = cA.toDataURL("image/png");
-        }
+    function forceRender() {
+        map.renderSync();
+    }
 
-        // now switch to B only
-        highlightSource.clear();
-        highlightCorrectGeometry(regionB, "B");
+    // Snapshot A
+    highlightSource.getFeatures().forEach(f => {
+        f.setStyle(f.get("labelText") === "A" ? null : new ol.style.Style(null));
+    });
+    forceRender();
 
-        setTimeout(() => {
-            const cB = getMapCanvas();
-            if(cB){
-                window.lastCompareSnapshotB = cB.toDataURL("image/png");
-            }
+    const cA = getMapCanvas();
+    if (cA) window.lastCompareSnapshotA = cA.toDataURL("image/png");
 
-            // after both captured, redraw both
-            highlightSource.clear();
-            highlightCorrectGeometry(regionA, "A");
-            highlightCorrectGeometry(regionB, "B");
+    // Snapshot B
+    highlightSource.getFeatures().forEach(f => {
+        f.setStyle(f.get("labelText") === "B" ? null : new ol.style.Style(null));
+    });
+    forceRender();
 
-        }, 600);
+    const cB = getMapCanvas();
+    if (cB) window.lastCompareSnapshotB = cB.toDataURL("image/png");
 
-    }, 600);
+    // Restore
+    highlightSource.getFeatures().forEach(f => f.setStyle(null));
+    forceRender();
+});
 
-}, 1200);
+
 
 
         // Show result in the panel
@@ -1229,7 +1261,10 @@ actionDiv.innerHTML = `
 `;
 actionDiv.style.display = "block";
 
-document.getElementById("downloadComparePDFBtn").addEventListener("click", () => {
+const pdfBtn = document.getElementById("downloadComparePDFBtn");
+pdfBtn.onclick = null;
+pdfBtn.onclick = () => {
+
 
     const summary = window.lastCompareSummary;
     if (!summary) return;
@@ -1251,9 +1286,9 @@ document.getElementById("downloadComparePDFBtn").addEventListener("click", () =>
         `the alternate location. Decision stability, scheduling predictability and execution staging remain less sensitive ` +
         `to environmental variation within ${summary.safer}.`;
 
-      = document.createElement("div");
-.style.width = "100%";
-.style.minHeight = "1120px";
+      const pdfDiv = document.createElement("div");
+pdfDiv.style.width = "100%";
+pdfDiv.style.minHeight = "1120px";
 pdfDiv.style.position = "relative";
 pdfDiv.style.padding = "40px";
 pdfDiv.style.fontFamily = "'Times New Roman', Times, serif";
@@ -1272,6 +1307,11 @@ pdfDiv.style.textAlign = "justify";
     let locB = B.state;
     if (B.lga) locB = `${B.lga}, ${locB}`;
     if (B.ward) locB = `${B.ward}, ${locB}`;
+
+    if (!window.lastCompareSnapshotA || !window.lastCompareSnapshotB) {
+    alert("Map snapshots are still processing. Please wait and try again.");
+    return;
+}
 
   
 pdfDiv.innerHTML = `
@@ -1385,10 +1425,6 @@ html2pdf()
 
        <script src="./resources/qgis2web.js"></script>
 
-<script>
-map.addLayer(highlightLayer);
-</script>
-
     
         <script>
     let realMap = map;
@@ -1418,43 +1454,7 @@ map.addLayer(highlightLayer);
     }
 });
 
-            // Create highlight layer and source
-let highlightSource = new ol.source.Vector();
-let highlightLayer = new ol.layer.Vector({
-    source: highlightSource,
-    style: function(feature) {
-    const textVal = feature.get("labelText");
 
-    return [
-        new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: '#000000',
-                width: 4
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,255,255,0.35)' // subtle fill so highlight is soft
-            })
-        }),
-
-        textVal
-            ? new ol.style.Style({
-                text: new ol.style.Text({
-                    text: textVal,
-                    font: 'bold 18px Arial',
-                    fill: new ol.style.Fill({ color: '#000' }),
-                    stroke: new ol.style.Stroke({ color: '#fff', width: 3 })
-                })
-            })
-            : null
-    ].filter(v => v !== null);
-},
-
-    zIndex: 99999
-});
-
-// Add highlight on map
-map.addLayer(highlightLayer);
-highlightLayer.setZIndex(999999);
 
 
 
@@ -1545,4 +1545,5 @@ highlightLayer.setZIndex(999999);
 </div>    
     </body>
 </html>
+
 
